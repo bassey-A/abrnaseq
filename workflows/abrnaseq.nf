@@ -60,8 +60,8 @@ workflow ABRNASEQ {
     //
     STAR_ALIGN (
         TRIMGALORE.out.reads,
-        params.star_index,
-        params.gtf,
+        file(params.star_index),
+        file(params.gtf),
         false
     )
 
