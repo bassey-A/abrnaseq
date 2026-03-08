@@ -5,6 +5,35 @@
     "description": "A pipeline for RNA-seq data",
     "type": "object",
     "$defs": {
+        "reference_genome_options": {
+            "title": "Reference Genome options",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "fasta": {
+                    "type": "string",
+                    "default": "/bio/reference/SacCerR64/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa"
+                },
+                "gtf": {
+                    "type": "string",
+                    "default": "/bio/reference/SacCerR64/Saccharomyces_cerevisiae.R64-1-1.115.gtf"
+                },
+                "star_index": {
+                    "type": "string",
+                    "default": "/bio/reference/SacCerR64/star_index/"
+                },
+                "transcriptome": {
+                    "type": "string",
+                    "default": "/bio/reference/SacCerR64/Saccharomyces_cerevisiae.R64-1-1.cds.all.fa"
+                },
+                "salmon_index": {
+                    "type": "string",
+                    "default": "/bio/reference/SacCerR64/salmon_index"
+                }
+            },
+            "required": ["fasta", "gtf", "star_index", "transcriptome", "salmon_index"]
+        },
         "input_output_options": {
             "title": "Input/output options",
             "type": "object",
@@ -174,6 +203,9 @@
         }
     },
     "allOf": [
+        {
+            "$ref": "#/$defs/reference_genome_options"
+        },
         {
             "$ref": "#/$defs/input_output_options"
         },

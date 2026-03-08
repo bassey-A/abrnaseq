@@ -7,3 +7,22 @@ testing/
 testing*
 *.pyc
 null/
+singularity-images/
+
+# Nextflow reports
+execution_report_*.html
+execution_timeline_*.html
+execution_trace_*.txt
+pipeline_dag_*.html
+
+# Temporary/Personal files
+stuff.txt
+startup
+*.log
+
+# Bioinformatics large files (if they end up in project dir)
+*.fastq.gz
+*.fq.gz
+*.bam
+*.bai
+*_index/

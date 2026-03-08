@@ -9,6 +9,11 @@ include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_abrnaseq_pipeline'
+include { TRIMGALORE             } from '../modules/nf-core/trimgalore/main'
+include { SALMON_QUANT           } from '../modules/nf-core/salmon/quant/main'
+include { DUPRADAR               } from '../modules/nf-core/dupradar/main'
+include { QUALIMAP_RNASEQ        } from '../modules/nf-core/qualimap/rnaseq/main'
+include { STAR_ALIGN             } from '../modules/nf-core/star/align/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -20,23 +25,75 @@ workflow ABRNASEQ {
 
     take:
     ch_samplesheet // channel: samplesheet read in from --input
+    
     main:
-
+    /*
+    * MODULE SPECIFICATION
+    ! FASTQC -> in: sample sheet ||| out: FASTQC.out.zip (QC plots)
+    ! TRIMAGOLRE -> in: sample sheet ||| out: TRIMAGALORE.out.reads (Trimmed reads ), TRIMAGALORE.out.log (Log file)
+    ! STAR_ALIGN -> in: Trimmed reads, STAR index, GTF, ignore GTF (false) ||| out: STAR_ALIGN.out.log_final (Log file), STAR_ALIGN.out.bam (Alignment BAM files)
+    ! SALMON_QUANT -> in: Trimmed reads, GTF, Transcriptome, Alignment mode (false), Override library type (false) ||| out: SALMON_QUANT.out.results (Quantification results)
+    ? DUPRADAR -> in: Alignment BAM files, GTF ||| out: DUPRADAR.out.multiqc (MultiQC files)
+    ? QUALIMAP_RNASEQ -> in: Alignment BAM files, GTF ||| out: QUALIMAP_RNASEQ.out.results (Output data)
+    */
     ch_versions = channel.empty()
     ch_multiqc_files = channel.empty()
+
     //
-    // MODULE: Run FastQC
+    // * MODULE 1: FastQC
     //
     FASTQC (
         ch_samplesheet
     )
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]})
-    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{_meta, zip -> zip})
+
+    //
+    // * MODULE 2: TRIMGALORE
+    //
+    TRIMGALORE (
+        ch_samplesheet
+    )
+
+    //
+    // * MODULE 3: STAR_ALIGN
+    // * Note: set params.star_index, params.gtf in nextflow.config
+    //
+    STAR_ALIGN (
+        TRIMGALORE.out.reads,
+        params.star_index,
+        params.gtf,
+        false
+    )
+
+    //
+    // * MODULE 4: SALMAON_QUANT
+    //
+    SALMON_QUANT ( 
+        TRIMGALORE.out.reads, 
+        params.salmon_index,
+        params.gtf, 
+        params.transcriptome, 
+        false, 
+        false 
+    )
+
+    //
+    // * MODULE 6: DUPRADAR
+    //
+    DUPRADAR ( STAR_ALIGN.out.bam, params.gtf )
+    ch_multiqc_files = ch_multiqc_files.mix(DUPRADAR.out.multiqc.collect{ _meta, mqc -> mqc })
+
+
+    //
+    // * MODULE 7: QUALIMAP_RNASEQ
+    //
+    QUALIMAP_RNASEQ ( STAR_ALIGN.out.bam, params.gtf )
+    ch_multiqc_files = ch_multiqc_files.mix(QUALIMAP_RNASEQ.out.results.collect{ _meta, res -> res })
 
     //
     // Collate and save software versions
     //
-    def topic_versions = Channel.topic("versions")
+    def topic_versions = channel.topic("versions")
         .distinct()
         .branch { entry ->
             versions_file: entry instanceof Path
