@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# export NXF_HOME=$HOME/.nxf_home
+export NXF_HOME=$HOME/.nxf_home
 # export NXF_SYNTAX_PARSER=v1
 export NXF_SINGULARITY_CACHEDIR="./singularity-images"
 export NXF_APPTAINER_CACHEDIR="./apptainer-images"
-# source $HOME/.bio/bin/activate
+source $HOME/.bio/bin/activate

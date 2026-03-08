@@ -17,7 +17,7 @@ pipeline_dag_*.html
 
 # Temporary/Personal files
 stuff.txt
-# startup
+startup
 *.log
 
 # Bioinformatics large files (if they end up in project dir)
