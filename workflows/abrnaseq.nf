@@ -60,8 +60,8 @@ workflow ABRNASEQ {
     //
     STAR_ALIGN (
         TRIMGALORE.out.reads,
-        file(params.star_index),
-        file(params.gtf),
+        [ [:], file(params.star_index, checkIfExists: true) ], // Manually creating the tuple 
+        [ [:], file(params.gtf, checkIfExists: true) ],        // Manually creating the tuple 
         false
     )
 
@@ -70,9 +70,9 @@ workflow ABRNASEQ {
     //
     SALMON_QUANT ( 
         TRIMGALORE.out.reads, 
-        params.salmon_index,
-        params.gtf, 
-        params.transcriptome, 
+        file(params.salmon_index, checkIfExists: true),
+        file(params.gtf, checkIfExists: true), 
+        file(params.transcriptome, checkIfExists: true),
         false, 
         false 
     )
@@ -80,14 +80,20 @@ workflow ABRNASEQ {
     //
     // * MODULE 6: DUPRADAR
     //
-    DUPRADAR ( STAR_ALIGN.out.bam, params.gtf )
+    DUPRADAR ( 
+    STAR_ALIGN.out.bam, 
+    [ [:], file(params.gtf, checkIfExists: true) ] 
+    )
     ch_multiqc_files = ch_multiqc_files.mix(DUPRADAR.out.multiqc.collect{ _meta, mqc -> mqc })
 
 
     //
     // * MODULE 7: QUALIMAP_RNASEQ
     //
-    QUALIMAP_RNASEQ ( STAR_ALIGN.out.bam, params.gtf )
+    QUALIMAP_RNASEQ ( 
+    STAR_ALIGN.out.bam, 
+    [ [:], file(params.gtf, checkIfExists: true) ] 
+    )
     ch_multiqc_files = ch_multiqc_files.mix(QUALIMAP_RNASEQ.out.results.collect{ _meta, res -> res })
 
     //
